@@ -1,0 +1,47 @@
+version: '3'
+
+services:
+  db:
+    image: mysql:5.7
+    command: --innodb-use-native-aio=0
+    container_name: db
+    restart: always
+    tty: true
+    volumes:
+      - ./mysql:/var/lib/mysql
+    environment:
+      - MYSQL_DATABASE=nodedb
+      - MYSQL_ROOT_PASSWORD=root
+    networks:
+      - node-network
+
+  app:
+    image: gwoelke/fullcycle-node:latest
+    build:
+      context: app
+      dockerfile: ../Dockerfile
+    container_name: app
+    networks:
+      - node-network
+    volumes:
+      - ./app:/usr/src/app
+    tty: true
+    ports:
+      - 3000:3000
+    depends_on:
+      - db
+
+  nginx:
+    build:
+      context: ./nginx
+      dockerfile: Dockerfile
+    image: gwoelke/fullcycle-nginx:latest
+    container_name: nginx
+    networks:
+      - node-network
+    ports:
+      - "8080:80"
+
+networks:
+  node-network:
+    driver: bridge
