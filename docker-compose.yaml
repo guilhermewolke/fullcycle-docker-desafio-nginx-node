@@ -3,12 +3,13 @@ version: '3'
 services:
   db:
     image: mysql:5.7
-    command: --innodb-use-native-aio=0
+    # build:
+    #   context: db
     container_name: db
     restart: always
     tty: true
-    volumes:
-      - ./mysql:/var/lib/mysql
+    #volumes:
+    #  - ./mysql:/var/lib/mysql
     environment:
       - MYSQL_DATABASE=nodedb
       - MYSQL_ROOT_PASSWORD=root
@@ -16,31 +17,30 @@ services:
       - node-network
 
   app:
-    image: gwoelke/fullcycle-node:latest
     build:
       context: app
-      dockerfile: ../Dockerfile
     container_name: app
     networks:
       - node-network
     volumes:
       - ./app:/usr/src/app
+      - /usr/src/app/node_modules
     tty: true
-    ports:
-      - 3000:3000
+    entrypoint: dockerize -wait tcp://db:3306 -timeout 50s node index.js
     depends_on:
       - db
 
   nginx:
     build:
-      context: ./nginx
+      context: nginx
       dockerfile: Dockerfile
-    image: gwoelke/fullcycle-nginx:latest
     container_name: nginx
     networks:
       - node-network
     ports:
       - "8080:80"
+    depends_on:
+      - app
 
 networks:
   node-network:
